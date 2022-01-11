@@ -1,0 +1,295 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+
+typedef struct client{
+	char name[20];
+	char email[20];
+	char phone[20];
+	int balance;
+}client;
+
+
+int input(client **c, char *fName, int *l);
+void list(client *c, int l);
+int transaction(client *c, int l);
+int search(client *c, int l, char *nev);
+int stringLength(char *n);
+int newClient(client **c, int *l);
+int emailCheck(char *eTemp);
+int phoneCheck(char *pTemp);
+void copy(char *fromHere, char *toHere);
+void quit(client *c, char *fName, int l);
+int overAgain();
+int options();
+
+
+int main(){
+	client *clients = NULL; char fileName[100]; int length = 0, again;
+		
+	while(again = input(&clients, fileName, &length))
+	{
+ 	 if(again == 2){ return 0; }
+	}
+	
+	while(1)
+	{		
+		switch(options()) 
+		{
+			case 1:	list(clients, length);	break;
+			
+			case 2:	while(transaction(clients, length)); break;
+						
+			case 3:	while(newClient(&clients, &length)); break;
+						
+			case 4:	quit(clients, fileName, length);	return 0;
+			
+			default:	printf("There are 4 options only: 1, 2, 3 or 4.\n");
+		}	
+	}
+}
+
+
+
+int options(){
+ int option; 
+ printf("\nYou can choose the following options:\n\n");
+ printf("1: client list / 2: transaction / 3: registration / 4: close the program\n\n");
+ scanf("%d", &option);
+ system("clear");
+ return option;
+}
+
+
+void quit(client *c, char *fName, int l){
+	FILE *fp = NULL; char save; int i;
+	
+	printf("The client list may have changed.\n");
+	printf("Do you want to save changes? (y / n) "); 
+	scanf(" %c", &save);
+
+	if(save == 'y'){
+		fp = fopen(fName, "w");
+		for(i = 0; i < l; i++)
+		{
+			fprintf(fp, "%-20s%-20s%-20s\t%d\n", c[i].name, c[i].email, c[i].phone, c[i].balance);
+		}
+		fflush(fp);
+		fclose(fp);
+	}
+		
+	free(c);
+	
+	printf("Program exits.\n");
+}
+
+
+
+
+int newClient(client **c, int *l){
+	char emailTemp[20], phoneTemp[20];
+	
+	printf("Email: "); scanf("%s", emailTemp);
+	if(emailCheck(emailTemp))
+	{ 
+	 printf("ERROR: email address is invalid.\n"); 
+	 if(overAgain()){ return 1; }else{ return 0; }
+	}
+	
+	printf("Phone: "); scanf("%s", phoneTemp);
+	if(phoneCheck(phoneTemp))
+	{ 
+	 printf("ERROR: phone number is invalid.\n"); 
+	 if(overAgain()){ return 1; }else{ return 0; }
+	}
+	
+	
+	if(!(*c = (client *)realloc(*c, ++(*l)*sizeof(client))))
+	{ 
+	 printf("ERROR: there is no memory enough\n");
+	 if(overAgain()){ return 1; }else{ return 0; }
+	}
+	
+	copy(emailTemp, (*c)[*l-1].email);
+	
+	copy(phoneTemp, (*c)[*l-1].phone);
+
+	printf("Name: "); scanf("%s", (*c)[*l-1].name);
+	
+	printf("Balance: "); scanf("%d", &(*c)[*l-1].balance);
+	
+return 0;
+}
+
+
+
+
+void copy(char *fromHere, char *toHere){
+	int i = 0;
+	while(fromHere[i]){	toHere[i] = fromHere[i]; i++;	}
+	toHere[i] = 0;
+}
+
+
+
+
+int emailCheck(char *eTemp){
+	int i = 0, dotIndex, atIndex, numberOfDots = -1, numberOfAts = -1, diff;
+
+	while(eTemp[i])
+	{
+		if(eTemp[i] == '.'){	dotIndex = i; numberOfDots++;	}
+		if(eTemp[i] == '@'){	atIndex = i; numberOfAts++;	}
+		i++;
+	}
+	
+	if((diff = dotIndex - atIndex) < 0){ return 1; }
+	if(numberOfDots || numberOfAts){ return 1; }
+	if(!dotIndex || !atIndex || dotIndex == i-1 || atIndex == i-1 || diff == 1){ return 1; }
+	
+	
+	return 0;
+}
+
+
+
+
+int phoneCheck(char *pTemp){
+	int i = 0;
+	
+	while(pTemp[i])
+	{
+		if(pTemp[i] < '0' ||	pTemp[i] > '9'){	return 1;	}	
+		i++;
+	}
+	
+	return 0;
+}
+
+
+
+
+int stringLength(char *n){
+	int i = 0;
+	while(n[i]){ i++; }
+	return i;
+}
+
+
+
+
+int search(client *c, int l, char *name)
+{
+	int i, j, nameLength = stringLength(name);
+	
+	for(i = 0; i < l; i++)
+	{
+		if(nameLength == stringLength(c[i].name))
+		{
+			j = 0;
+			while(j < nameLength && name[j] == c[i].name[j])
+			{ 
+				j++; 
+			}
+			if(j == nameLength){ return i; }
+		}
+	}	
+	
+	return -1;
+}
+
+
+
+
+int transaction(client *c, int l)
+{
+	char transactorName[20], recipientName[20]; int transactorIndex, recipientIndex, amount;
+	
+	printf("Transactor's name: "); scanf("%s", transactorName);
+	
+	if((transactorIndex = search(c, l, transactorName)) == -1)
+	{ 
+	 printf("ERROR: name cannot be found.\n");
+	 if(overAgain()){ return 1; }else{ return 0; }
+	}
+		
+	printf("Recipient's name: "); scanf("%s", recipientName);
+	
+	if((recipientIndex = search(c, l, recipientName)) == -1)
+	{ 
+	 printf("ERROR: name cannot be found.\n"); 
+	 if(overAgain()){ return 1; }else{ return 0; }
+	}
+	
+	printf("Amount: "); scanf("%d", &amount);
+	
+	if(c[transactorIndex].balance < amount)
+	{ 
+	 printf("ERROR: funds is not enough.\n"); 
+	 if(overAgain()){ return 1; }else{ return 0; }
+	}
+	
+	c[transactorIndex].balance -= amount;
+	c[recipientIndex].balance += amount;
+	
+	printf("Amount has been transferred.\n");
+	return 0;
+}
+
+
+
+
+void list(client *c, int l)
+{
+	int i;
+	for(i = 0; i < l; i++)
+	{
+		printf("Name: %-20s email: %-20s phone: %-20s balance: %d\n", c[i].name, c[i].email, c[i].phone, c[i].balance);
+	}
+}
+
+
+
+
+int input(client **c, char *fName, int *l)
+{
+	FILE *fp = NULL; char ch; int i;
+	
+	printf("Type the name of the text file you want to open: "); scanf("%s", fName);
+	
+	if(!(fp = fopen(fName, "r")))
+	{ 
+	 printf("ERROR: file cannot be opened. (Its path may be wrong).\n"); 
+	 if(overAgain()){ return 1; }else{ printf("Program exits.\n"); return 2; }
+	}
+	
+	while((ch = fgetc(fp)) != EOF)
+	{
+		if(ch == '\n'){ (*l)++; } 
+	}
+	
+	if(!(*c = (client *)malloc(*l*sizeof(client))))
+	{ 
+	 printf("ERROR: there is no memory enough.\n");
+	 if(overAgain()){ return 1; }else{ printf("Program exits.\n"); return 2; }
+	}
+	
+	rewind(fp);
+	
+	for(i = 0; i < *l; i++)
+	{
+		fscanf(fp, "%s%s%s%d", (*c)[i].name, (*c)[i].email, (*c)[i].phone, &(*c)[i].balance);	
+	}
+	
+	fclose(fp);
+	printf("Data have been read into the list.\n");
+	return 0;
+}
+
+
+
+int overAgain(){
+ char again; 
+ printf("Do you want to try again? (y / n) "); scanf(" %c", &again);
+ if(again == 'y'){ return 1; }else{ return 0; }
+}
